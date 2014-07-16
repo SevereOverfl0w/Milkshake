@@ -76,7 +76,7 @@ gulp.task('coffee', function() {
 gulp.task('sass', function() {
     return gulp.src(config.sass)
                .pipe($.plumber())
-               .pipe($.sass())
+               .pipe($.sass({errLogToConsole: true})) // Monkey patch for gulp-sass
                .pipe($.autoprefixer())
                .pipe($.if(isDev, gulp.dest(config.tmp)))
                .pipe($.if(isBuild, $.minifyCss()))
