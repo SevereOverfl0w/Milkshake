@@ -12,12 +12,12 @@ var gulp = require('gulp'),
         dist: 'dist',
 
         // globs
-        html: 'app/**/*.html',
-        jade: 'app/**/*.jade',
-        js: 'app/**/*.js',
-        coffee: 'app/**/*.coffee',
-        sass: 'app/**/*.{scss,sass}',
-        image: 'app/**/*.{png,jpeg,jpg,gif,svg}'
+        html: 'app/*.html',
+        jade: 'app/*.jade',
+        js: 'app/scripts/**/*.js',
+        coffee: 'app/scripts/**/*.coffee',
+        sass: 'app/styles/**/*.{scss,sass}',
+        image: 'app/images/**/*.{png,jpeg,jpg,gif,svg}'
     };
 
 var isBuild = args.build !== undefined,
