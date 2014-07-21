@@ -5,42 +5,47 @@ var gulp = require('gulp'),
     wiredep = require('wiredep').stream,
     lazypipe = require('lazypipe'),
     args  = require('yargs').argv,
-    config = {
-        // folders
+    folders = {
         app: 'app',
         tmp: '.tmp',
         dist: 'dist',
+    },
+    globs = {
+        html: folders.app + '/*.html',
+        jade: folders.app + '/*.jade',
+        js: folders.app + '/**/*.js',
+        coffee: folders.app + '/**/*.coffee',
+        sass: folders.app + '/**/*.{scss,sass}',
+        image: folders.app + '/**/*.{png,jpeg,jpg,gif,svg}'
+    },
+    ignore_dir = ['!' + folders.app + '/{bower_components,bower_components/**}'];
 
-        // globs
-        html: 'app/*.html',
-        jade: 'app/*.jade',
-        js: 'app/scripts/**/*.js',
-        coffee: 'app/scripts/**/*.coffee',
-        sass: 'app/styles/**/*.{scss,sass}',
-        image: 'app/images/**/*.{png,jpeg,jpg,gif,svg}'
-    };
+    // add ignores to globs
+    for (glob in globs){
+        globs[glob] = [globs[glob]].concat(ignore_dir);
+    }
 
 var isBuild = args.build !== undefined,
     isDev = !isBuild;
 
 gulp.task('templates', function() {
-    return gulp.src(config.jade)
+    return gulp.src(globs.jade)
                .pipe($.plumber())
                .pipe($.jade({pretty: true})) // Fix for useref
-               .pipe($.if(isDev, gulp.dest(config.tmp)))
+               .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isDev, reload({stream: true})))
                .pipe($.if(isBuild, $.useref.assets()))
                .pipe($.if('*.js', $.uglify()))
                .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
                .pipe($.if(isBuild, $.useref()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)));
+               .pipe($.if(isBuild, gulp.dest(folders.dist)));
 });
 
 gulp.task('html', function() {
-    return gulp.src(config.html)
+    return gulp.src(globs.html)
                .pipe($.plumber())
-               .pipe($.if(isDev, gulp.dest(config.tmp)))
+               .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isDev, reload({stream: true})))
                .pipe($.if(isBuild, $.useref.assets()))
                .pipe($.if('*.js', $.uglify()))
@@ -48,39 +53,39 @@ gulp.task('html', function() {
                .pipe($.if(isBuild, $.useref.restore()))
                .pipe($.if(isBuild, $.useref()))
                .pipe($.if(isBuild, $.minifyHtml()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)));
+               .pipe($.if(isBuild, gulp.dest(folders.dist)));
 });
 
 gulp.task('javascript', function() {
-    return gulp.src(config.js)
+    return gulp.src(globs.js)
                .pipe($.plumber())
                .pipe($.jshint({lookup: true}))
                .pipe($.jshint.reporter('jshint-stylish'))
                .pipe($.if(isBuild, $.uglify()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)))
+               .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
 
 gulp.task('coffee', function() {
-    return gulp.src(config.coffee)
+    return gulp.src(globs.coffee)
                .pipe($.plumber())
                .pipe($.coffeelint())
                .pipe($.coffeelint.reporter())
                .pipe($.coffee())
-               .pipe($.if(isDev, gulp.dest(config.tmp)))
+               .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.uglify()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)))
+               .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
 
 gulp.task('sass', function() {
-    return gulp.src(config.sass)
+    return gulp.src(globs.sass)
                .pipe($.plumber())
                .pipe($.sass({errLogToConsole: true})) // Monkey patch for gulp-sass
                .pipe($.autoprefixer())
-               .pipe($.if(isDev, gulp.dest(config.tmp)))
+               .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.minifyCss()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)))
+               .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
 
@@ -88,45 +93,45 @@ gulp.task('css', function() {
     return gulp.src(config.css)
                .pipe($.plumber())
                .pipe($.autoprefixer())
-               .pipe($.if(isDev, gulp.dest(config.tmp)))
+               .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.minifyCss()))
-               .pipe($.if(isBuild, gulp.dest(config.dist)))
+               .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
 
 gulp.task('wiredep', function() {
-    return gulp.src([config.jade, config.html, config.sass])
+    return gulp.src([].concat(globs.jade, globs.html, globs.sass))
                .pipe($.plumber())
                .pipe(wiredep())
                .pipe($.if(isDev, reload({stream: true})))
-               .pipe(gulp.dest(config.app));
+               .pipe(gulp.dest(folders.app));
 });
 
 gulp.task('image', function() {
-    return gulp.src([config.image])
+    return gulp.src(globs.image)
                .pipe($.plumber())
                .pipe($.if(isBuild, $.imagemin({
                 progressive: true,
                 svgoPlugins: [{removeViewBox: false}],
                 use: [pngcrush()]
                })))
-               .pipe($.if(isBuild, gulp.dest(config.dist)))
+               .pipe($.if(isBuild, gulp.dest(folders.dist)))
 });
 
 gulp.task('watch', function() {
-    $.watch({glob: config.jade, name: 'Jade'}, ['templates']); 
-    $.watch({glob: config.html, name: 'HTML'}, ['html']); 
-    $.watch({glob: config.coffee, name: 'Coffee'}, ['coffee']); 
-    $.watch({glob: config.js, name: 'JS'}, ['javascript']); 
-    $.watch({glob: config.sass, name: 'Sass'}, ['sass']); 
-    $.watch({glob: config.image, name: 'Image'}, ['image']); 
+    $.watch({glob: globs.jade, name: 'Jade'}, ['templates']); 
+    $.watch({glob: globs.html, name: 'HTML'}, ['html']); 
+    $.watch({glob: globs.coffee, name: 'Coffee'}, ['coffee']); 
+    $.watch({glob: globs.js, name: 'JS'}, ['javascript']); 
+    $.watch({glob: globs.sass, name: 'Sass'}, ['sass']); 
+    $.watch({glob: globs.image, name: 'Image'}, ['image']); 
     $.watch({glob: 'bower.json', name: 'Wiredep'}, ['wiredep']);
 });
 
 gulp.task('connect', function() {
     browserSync({
         server: {
-            baseDir: [config.tmp, config.app]
+            baseDir: [folders.tmp, folders.app]
         }
     });
 });
