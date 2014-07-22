@@ -4,6 +4,7 @@ var gulp = require('gulp'),
     reload = browserSync.reload,
     wiredep = require('wiredep').stream,
     lazypipe = require('lazypipe'),
+    pngcrush = require('imagemin-pngcrush'),
     runSequence = require('run-sequence'),
     args  = require('yargs').argv,
     folders = {
