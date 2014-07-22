@@ -4,6 +4,7 @@ var gulp = require('gulp'),
     reload = browserSync.reload,
     wiredep = require('wiredep').stream,
     lazypipe = require('lazypipe'),
+    runSequence = require('run-sequence'),
     args  = require('yargs').argv,
     folders = {
         app: 'app',
@@ -34,7 +35,9 @@ gulp.task('templates', function() {
                .pipe($.jade({pretty: true})) // Fix for useref
                .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isDev, reload({stream: true})))
-               .pipe($.if(isBuild, $.useref.assets()))
+               .pipe($.if(isBuild, $.useref.assets({
+                    searchPath: [folders.app, folders.tmp]
+               })))
                .pipe($.if('*.js', $.uglify()))
                .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
@@ -47,7 +50,9 @@ gulp.task('html', function() {
                .pipe($.plumber())
                .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isDev, reload({stream: true})))
-               .pipe($.if(isBuild, $.useref.assets()))
+               .pipe($.if(isBuild, $.useref.assets({
+                    searchPath: [folders.app, folders.tmp]
+               })))
                .pipe($.if('*.js', $.uglify()))
                .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
@@ -61,7 +66,7 @@ gulp.task('javascript', function() {
                .pipe($.plumber())
                .pipe($.jshint({lookup: true}))
                .pipe($.jshint.reporter('jshint-stylish'))
-               .pipe($.if(isBuild, $.uglify()))
+               //.pipe($.if(isBuild, $.uglify()))
                .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
@@ -72,9 +77,10 @@ gulp.task('coffee', function() {
                .pipe($.coffeelint())
                .pipe($.coffeelint.reporter())
                .pipe($.coffee())
-               .pipe($.if(isDev, gulp.dest(folders.tmp)))
+               //.pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.uglify()))
-               .pipe($.if(isBuild, gulp.dest(folders.dist)))
+               //.pipe($.if(isBuild, gulp.dest(folders.dist)))
+               .pipe(gulp.dest(folders.tmp)) // Should solve issue with useref
                .pipe($.if(isDev, reload({stream: true})));
 });
 
@@ -83,9 +89,10 @@ gulp.task('sass', function() {
                .pipe($.plumber())
                .pipe($.sass({errLogToConsole: true})) // Monkey patch for gulp-sass
                .pipe($.autoprefixer())
-               .pipe($.if(isDev, gulp.dest(folders.tmp)))
+               //.pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.minifyCss()))
-               .pipe($.if(isBuild, gulp.dest(folders.dist)))
+               //.pipe($.if(isBuild, gulp.dest(folders.dist)))
+               .pipe(gulp.dest(folders.tmp)) // Should solve issue with useref
                .pipe($.if(isDev, reload({stream: true})));
 });
 
@@ -94,7 +101,7 @@ gulp.task('css', function() {
                .pipe($.plumber())
                .pipe($.autoprefixer())
                .pipe($.if(isDev, gulp.dest(folders.tmp)))
-               .pipe($.if(isBuild, $.minifyCss()))
+               //.pipe($.if(isBuild, $.minifyCss()))
                .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
@@ -139,3 +146,8 @@ gulp.task('connect', function() {
 gulp.task('serve', ['watch', 'connect']);
 
 gulp.task('default', ['wiredep', 'sass', 'coffee', 'javascript', 'html', 'templates', 'image']);
+
+gulp.task('build', function(cb) {
+    isBuild = true; isDev = false;
+    runSequence(['coffee', 'sass'], ['wiredep', 'javascript', 'html', 'templates', 'image'], cb);
+});
