@@ -30,6 +30,12 @@ var gulp = require('gulp'),
 var isBuild = args.build !== undefined,
     isDev = !isBuild;
 
+function boolAndRegex(bool, regex) {
+    return function(file) {
+        return $.match(file, regex) && bool;
+    }
+}
+
 gulp.task('templates', function() {
     return gulp.src(globs.jade)
                .pipe($.plumber())
@@ -43,6 +49,7 @@ gulp.task('templates', function() {
                .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
                .pipe($.if(isBuild, $.useref()))
+               .pipe($.if(boolAndRegex(isBuild, '*.html'), $.minifyHtml()))
                .pipe($.if(isBuild, gulp.dest(folders.dist)));
 });
 
@@ -58,7 +65,7 @@ gulp.task('html', function() {
                .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
                .pipe($.if(isBuild, $.useref()))
-               .pipe($.if(isBuild, $.minifyHtml()))
+               .pipe($.if(boolAndRegex(isBuild, '*.html'), $.minifyHtml()))
                .pipe($.if(isBuild, gulp.dest(folders.dist)));
 });
 
