@@ -13,11 +13,10 @@ var gulp = require('gulp'),
         dist: 'dist',
     },
     globs = {
-        html: folders.app + '/*.html',
-        jade: folders.app + '/*.jade',
-        js: folders.app + '/**/*.js',
+        templates: folders.app + '/*.{jade,html}',
+        javascript: folders.app + '/**/*.js',
         coffee: folders.app + '/**/*.coffee',
-        sass: folders.app + '/**/*.{scss,sass}',
+        styles: folders.app + '/**/*.{scss,sass,css}',
         image: folders.app + '/**/*.{png,jpeg,jpg,gif,svg}'
     },
     ignore_dir = ['!' + folders.app + '/{bower_components,bower_components/**}'];
@@ -31,31 +30,14 @@ var isBuild = args.build !== undefined,
     isDev = !isBuild;
 
 gulp.task('templates', function() {
-    return gulp.src(globs.jade)
+    return gulp.src(globs.templates)
                .pipe($.plumber())
-               .pipe($.jade({pretty: true})) // Fix for useref
+               .pipe($.if('*.jade', $.jade({pretty: true})))
                .pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isDev, reload({stream: true})))
                .pipe($.if(isBuild, $.useref.assets({
                     searchPath: [folders.app, folders.tmp]
                })))
-               .pipe($.if('*.js', $.uglify()))
-               .pipe($.if('*.css', $.minifyCss()))
-               .pipe($.if(isBuild, $.useref.restore()))
-               .pipe($.if(isBuild, $.useref()))
-               .pipe($.if(isBuild, gulp.dest(folders.dist)));
-});
-
-gulp.task('html', function() {
-    return gulp.src(globs.html)
-               .pipe($.plumber())
-               .pipe($.if(isDev, gulp.dest(folders.tmp)))
-               .pipe($.if(isDev, reload({stream: true})))
-               .pipe($.if(isBuild, $.useref.assets({
-                    searchPath: [folders.app, folders.tmp]
-               })))
-               .pipe($.if('*.js', $.uglify()))
-               .pipe($.if('*.css', $.minifyCss()))
                .pipe($.if(isBuild, $.useref.restore()))
                .pipe($.if(isBuild, $.useref()))
                .pipe($.if(isBuild, $.minifyHtml()))
@@ -63,7 +45,7 @@ gulp.task('html', function() {
 });
 
 gulp.task('javascript', function() {
-    return gulp.src(globs.js)
+    return gulp.src(globs.javascript)
                .pipe($.plumber())
                .pipe($.jshint({lookup: true}))
                .pipe($.jshint.reporter('jshint-stylish'))
@@ -85,25 +67,15 @@ gulp.task('coffee', function() {
                .pipe($.if(isDev, reload({stream: true})));
 });
 
-gulp.task('sass', function() {
+gulp.task('styles', function() {
     return gulp.src(globs.sass)
                .pipe($.plumber())
-               .pipe($.sass({errLogToConsole: true})) // Monkey patch for gulp-sass
+               .pipe($.if('*.{scss,sass}', $.sass({errLogToConsole: true}))) // Monkey patch for gulp-sass
                .pipe($.autoprefixer())
                //.pipe($.if(isDev, gulp.dest(folders.tmp)))
                .pipe($.if(isBuild, $.minifyCss()))
                //.pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe(gulp.dest(folders.tmp)) // Should solve issue with useref
-               .pipe($.if(isDev, reload({stream: true})));
-});
-
-gulp.task('css', function() {
-    return gulp.src(config.css)
-               .pipe($.plumber())
-               .pipe($.autoprefixer())
-               .pipe($.if(isDev, gulp.dest(folders.tmp)))
-               //.pipe($.if(isBuild, $.minifyCss()))
-               .pipe($.if(isBuild, gulp.dest(folders.dist)))
                .pipe($.if(isDev, reload({stream: true})));
 });
 
@@ -127,12 +99,10 @@ gulp.task('image', function() {
 });
 
 gulp.task('watch', function() {
-    $.watch({glob: globs.jade, name: 'Jade'}, ['templates']); 
-    $.watch({glob: globs.html, name: 'HTML'}, ['html']); 
-    $.watch({glob: globs.coffee, name: 'Coffee'}, ['coffee']); 
-    $.watch({glob: globs.js, name: 'JS'}, ['javascript']); 
-    $.watch({glob: globs.sass, name: 'Sass'}, ['sass']); 
-    $.watch({glob: globs.image, name: 'Image'}, ['image']); 
+    for (var key in globs) {
+        $.watch({glob: globs[key], name: key}, [key]);
+    }
+    
     $.watch({glob: 'bower.json', name: 'Wiredep'}, ['wiredep']);
 });
 
