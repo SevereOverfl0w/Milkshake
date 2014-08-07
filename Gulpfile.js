@@ -78,7 +78,6 @@ gulp.task('styles', function() {
     return gulp.src(globs.styles)
                .pipe($.plumber())
                .pipe($.if('**/*.{scss|sass}', $.sass({errLogToConsole: true}))) // gulp-sass errors wrongly?
-               .pipe(require('gulp-debug')({verbose: true}))
                .pipe($.autoprefixer())
                .pipe(gulp.dest(folders.tmp)) // Solve issue #2
                .pipe($.if(isDev, reload({stream: true})));
