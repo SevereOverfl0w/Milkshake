@@ -16,7 +16,7 @@ var gulp = require('gulp'),
         templates: folders.app + '/*.{jade,html}',
         javascript: folders.app + '/**/*.js',
         coffee: folders.app + '/**/*.coffee',
-        styles: folders.app + '/**/*.{scss,sass,css}',
+        styles: folders.app + '/**/*.{scss,sass,css,less}',
         image: folders.app + '/**/*.{png,jpeg,jpg,gif,svg}'
     },
     ignore_dir = ['!' + folders.app + '/{bower_components,bower_components/**}'];
@@ -78,6 +78,7 @@ gulp.task('styles', function() {
     return gulp.src(globs.styles)
                .pipe($.plumber())
                .pipe($.if('**/*.{scss|sass}', $.sass({errLogToConsole: true}))) // gulp-sass errors wrongly?
+               .pipe($.if('*.less'), $.less())
                .pipe($.autoprefixer())
                .pipe(gulp.dest(folders.tmp)) // Solve issue #2
                .pipe($.if(isDev, reload({stream: true})));
